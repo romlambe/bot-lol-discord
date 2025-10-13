@@ -1,4 +1,5 @@
 import { initEnv } from "../config/env";
+import { Colors } from "../interface/color";
 import { Match } from "../interface/match";
 
 initEnv();
@@ -18,6 +19,8 @@ async function testFetchScheduledWorldsMatches() {
     });
 
     if (!res.ok) throw new Error(`[ERROR]: PandaScore API: ${res.status}`);
+
+    console.log(`${Colors.Green}, [SUCCESS]: Pandascore fetched successfully`);
 
     // ALL MATCHES
     const matches: Match[] = await res.json();
