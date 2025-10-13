@@ -2,6 +2,10 @@ import db from './initDb';
 import { Match } from '../interface/match';
 import { Colors } from '../interface/color';
 
+// MATCHES
+
+  // UPDATE
+
 export function insertMatch(match: Match) {
   const team1 = match.opponents[0].opponent.acronym;
   const team2 = match.opponents[1].opponent.acronym;
@@ -91,4 +95,10 @@ export function updateMatches(matches: Match[]) {
       each.opponents[1].opponent.acronym !== 'TBS'
   );
   confirmedMatches.forEach(insertMatch);
+}
+
+  // GETTERS
+
+export function getMatchById(pandascoreId: number) {
+  return db.prepare(`SELECT * FROM matches WHERE pandascore_id = ?`).get(pandascoreId);
 }
