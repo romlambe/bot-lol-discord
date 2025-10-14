@@ -1,4 +1,4 @@
-import { Client, Interaction } from 'discord.js';
+import { Client, EmbedBuilder, Interaction } from 'discord.js';
 import { getMatchNotStarted } from '../../db/matchDb';
 import { getMatchBets, createOrUpdateBet } from '../../db/betDb';
 import { currentVotes, Vote } from '../utils/tempsVote';
@@ -66,9 +66,19 @@ export function interactionCreate(client: Client) {
 			// Nettoyer le vote temporaire
 			currentVotes[matchId] = currentVotes[matchId].filter(v => v.userId !== userId);
 
+			const confirmEmbed = new EmbedBuilder()
+			.setColor(0x00FF00) // Vert
+			.setTitle('✅ Pari enregistré !')
+			.addFields(
+				{ name: '🏆 Gagnant prédit', value: userVotes.winner, inline: true },
+				{ name: '📊 Score prédit', value: userVotes.score, inline: true }
+			)
+			.setFooter({ text: 'Bonne chance !' })
+			.setTimestamp();
+
 			// Confirmer à l'utilisateur
 			await interaction.reply({
-				content: `✅ Votre pari a été enregistré !\n**Gagnant prédit:** ${userVotes.winner}\n**Score prédit:** ${userVotes.score}`,
+				embeds: [confirmEmbed],
 				ephemeral: true
 			});
 		} else {

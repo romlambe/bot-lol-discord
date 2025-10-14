@@ -30,3 +30,7 @@ export function getUserByDiscordId(discordId: string) {
 export function getAllUsers() {
   return db.prepare(`SELECT * FROM users`).all();
 }
+
+export function getUsersByPoints() {
+  return db.prepare(`SELECT * FROM users ORDER BY points DESC`).all();
+}
