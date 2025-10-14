@@ -1,13 +1,15 @@
 import { SlashCommandBuilder } from "discord.js";
 import { getBetsForMatch, getCurrentMatch } from "../../db/matchDb";
 import { EmbedBuilder } from "@discordjs/builders";
+import { Match } from "../../interface/match";
 
 export const data = new SlashCommandBuilder()
   .setName('current')
   .setDescription('Affiche le match actuellement en cours et les paris associés.');
 
 export async function execute(interaction) {
-  const match = getCurrentMatch();
+  
+  const match = getCurrentMatch() as Match;
 
   if (!match) {
     return interaction.reply({

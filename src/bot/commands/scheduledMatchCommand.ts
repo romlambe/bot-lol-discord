@@ -6,6 +6,7 @@ export const data = new SlashCommandBuilder()
   .setDescription('Get information about a match')
 
 export async function execute(interaction) {
+	
 	const matches = getNextMatches(5);
 
 	if (!matches.length) {
