@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS matches (
   team2 TEXT,
   bo_count INTEGER,
   score_team1 INTEGER DEFAULT 0,
-  score_team2 INTEGER DEFAULT 0
+  score_team2 INTEGER DEFAULT 0,
+  announced INTEGER DEFAULT 0,
+  votes_closed INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS users (
