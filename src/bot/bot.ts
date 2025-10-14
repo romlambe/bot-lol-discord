@@ -35,7 +35,7 @@ export const startBot = async () => {
 		return;
 	}
 
-	scheduleAnnouncements(channel, 10, 1);
+	scheduleAnnouncements(channel, 1440, 1);
 	console.log(`${Colors.Green}[BOT]: Schedule announcements started${Colors.Reset}`);
 
   });

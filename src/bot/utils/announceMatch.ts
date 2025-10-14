@@ -5,12 +5,12 @@ export const announceMatch = async(channel: TextChannel, match: Match) => {
 
 	const winnerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
 		new ButtonBuilder()
-			.setCustomId(`vote_winner_${match.id}_${match.opponents[0].opponent.name}`)
-			.setLabel(`${match.opponents[0].opponent.name}`)
+			.setCustomId(`vote_winner_${match.id}_${match.team1}`)
+			.setLabel(`${match.team1}`)
 			.setStyle(ButtonStyle.Primary),
 		new ButtonBuilder()
-			.setCustomId(`vote_winner_${match.id}_${match.opponents[1].opponent.name}`)
-			.setLabel(`${match.opponents[1].opponent.name}`)
+			.setCustomId(`vote_winner_${match.id}_${match.team2}`)
+			.setLabel(`${match.team2}`)
 			.setStyle(ButtonStyle.Primary)
 	);
 	const scoreRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -20,7 +20,7 @@ export const announceMatch = async(channel: TextChannel, match: Match) => {
 	)
 
 	await channel.send({
-		content: `**${match.opponents[0].opponent.name} vs ${match.opponents[1].opponent.name}** - ${new Date(match.begin_at).toLocaleString()}`,
+		content: `**${match.team1} vs ${match.team2}** - ${new Date(match.begin_at).toLocaleString()}`,
 		components: [winnerRow, scoreRow],
 	})
 }
