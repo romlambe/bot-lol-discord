@@ -1,0 +1,33 @@
+{
+  "name": "bot_lol",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "tsx src/deploy-commands.ts",
+    "dev": "tsx src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romlambe/bot-lol-discord.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/romlambe/bot-lol-discord/issues"
+  },
+  "homepage": "https://github.com/romlambe/bot-lol-discord#readme",
+  "description": "",
+  "dependencies": {
+    "discord.js": "^14.23.2",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
