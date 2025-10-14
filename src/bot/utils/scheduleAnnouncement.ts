@@ -15,7 +15,7 @@ export function scheduleAnnouncements(channel: TextChannel, minutesBefore: numbe
 
 			if (!match.announced && diffMinutes <= minutesBefore && diffMinutes > 0) {
 				announceMatch(channel, match);
-				updateMatchAnnounced(match.id);
+				// updateMatchAnnounced(match.id);
 			}
 
 			if (!match.votes_closed && diffMinutes <= closeVotesBefore && diffMinutes > 0) {
@@ -25,5 +25,5 @@ export function scheduleAnnouncements(channel: TextChannel, minutesBefore: numbe
 			}
 
 		});
-	}, 1000 * 60);
+	}, 1000 * 10);
 }

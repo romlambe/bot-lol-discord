@@ -1,18 +1,13 @@
 import db from './initDb';
 import { Match } from '../interface/match';
+import { ApiMatch } from '../interface/apiMatch';
 import { Colors } from '../interface/color';
 
 // MATCHES
 
-  // UPDATE
+// UPDATE
 
 export function insertMatch(match: Match) {
-  const team1 = match.opponents[0].opponent.acronym;
-  const team2 = match.opponents[1].opponent.acronym;
-
-  const score1 = match.results.find(each => each.team_id === match.opponents[0].opponent.id)?.score ?? 0;
-  const score2 = match.results.find(each => each.team_id === match.opponents[1].opponent.id)?.score ?? 0;
-
   const insert = db.prepare(`
     INSERT OR IGNORE INTO matches (
       pandascore_id,
@@ -28,16 +23,16 @@ export function insertMatch(match: Match) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   insert.run(
-    match.id,
+    match.pandascore_id,
     match.name,
     match.begin_at,
     match.status,
-    match.tournament?.name ?? '',
-    team1,
-    team2,
-    match.number_of_games,
-    score1,
-    score2
+    match.tournament,
+    match.team1,
+    match.team2,
+    match.bo_count,
+    match.score_team1,
+    match.score_team2
   );
 
   const update = db.prepare(`
@@ -61,50 +56,84 @@ export function insertMatch(match: Match) {
     match.name,
     match.begin_at,
     match.status,
-    match.tournament?.name ?? '',
-    team1,
-    team2,
-    match.number_of_games,
-    score1,
-    score2,
-    match.id,
+    match.tournament,
+    match.team1,
+    match.team2,
+    match.bo_count,
+    match.score_team1,
+    match.score_team2,
+    match.pandascore_id,
     match.name,
     match.begin_at,
     match.status,
-    match.tournament?.name ?? '',
-    team1,
-    team2,
-    match.number_of_games,
-    score1,
-    score2
+    match.tournament,
+    match.team1,
+    match.team2,
+    match.bo_count,
+    match.score_team1,
+    match.score_team2
   );
 
   if (result.changes > 0) {
-    console.log(`${Colors.Blue}[DB]: Match updated in DB: ${match.name} (${team1} vs ${team2})`);
+    console.log(`${Colors.Blue}[DB]: Match updated in DB: ${match.name} (${match.team1} vs ${match.team2})`);
   } else {
-    console.log(`${Colors.Orange}[DB]: No change for match: ${match.name} (${team1} vs ${team2})`);
+    console.log(`${Colors.Orange}[DB]: No change for match: ${match.name} (${match.team1} vs ${match.team2})`);
   }
 }
 
-export function updateMatches(matches: Match[]) {
+// Convertir les données de l'API vers le format BD
+function convertApiMatchToDbMatch(apiMatch: ApiMatch): Match {
+  const team1 = apiMatch.opponents[0]?.opponent.acronym ?? 'TBD';
+  const team2 = apiMatch.opponents[1]?.opponent.acronym ?? 'TBD';
+
+  const score1 = apiMatch.results.find(each => each.team_id === apiMatch.opponents[0]?.opponent.id)?.score ?? 0;
+  const score2 = apiMatch.results.find(each => each.team_id === apiMatch.opponents[1]?.opponent.id)?.score ?? 0;
+
+  return {
+    id: 0, // sera généré par la BD
+    pandascore_id: apiMatch.id,
+    name: apiMatch.name,
+    begin_at: apiMatch.begin_at,
+    status: apiMatch.status,
+    tournament: apiMatch.tournament?.name ?? '',
+    team1,
+    team2,
+    bo_count: apiMatch.number_of_games,
+    score_team1: score1,
+    score_team2: score2,
+    announced: 0,
+    votes_closed: 0,
+  };
+}
+
+// Filtrer les matchs Worlds comme dans le code Go
+function isWorldsMatch(match: ApiMatch): boolean {
+  return (
+    match.league?.name === 'Worlds' ||
+    match.serie?.slug === 'league-of-legends-world-championship-2025' ||
+    match.serie?.slug === 'league-of-legends-world-championship-2025-playoffs'
+  );
+}
+
+export function updateMatches(apiMatches: ApiMatch[]) {
   console.log(`${Colors.Yellow}[LOG]: Updating database`);
 
-  const confirmedMatches = matches.filter(each => {
-    const hasValidTeams =
-      each.opponents.length === 2 ;
+  const confirmedMatches = apiMatches.filter(each => {
+    const hasValidTeams = each.opponents.length === 2;
+    const isWorlds = isWorldsMatch(each);
 
-    const isWorldsMatch =
-      each.league?.name === 'Worlds' ||
-      each.serie?.slug === 'league-of-legends-world-championship-2025' ||
-      each.serie?.slug === 'league-of-legends-world-championship-2025-playoffs';
-
-    return hasValidTeams && isWorldsMatch;
+    return hasValidTeams && isWorlds;
   });
 
   console.log(`${Colors.Blue}[LOG]: Found ${confirmedMatches.length} Worlds 2025 matches to insert.`);
-  confirmedMatches.forEach(insertMatch);
+  
+  confirmedMatches.forEach(apiMatch => {
+    const dbMatch = convertApiMatchToDbMatch(apiMatch);
+    insertMatch(dbMatch);
+  });
 }
-  // GETTERS
+
+// GETTERS
 
 export function getMatchById(pandascoreId: number) {
   return db.prepare(`SELECT * FROM matches WHERE pandascore_id = ?`).get(pandascoreId);
@@ -154,34 +183,33 @@ export function getBetsForMatch(matchId: number) {
 }
 
 export function getMatchNotStarted() {
-	return db
-		.prepare(`
-			SELECT * FROM matches
-			WHERE status = 'not_started'
-				AND datetime(begin_at) >= datetime('now')
-				AND team1 != 'TBD'
-				AND team2 != 'TBD'
-		`)
-		.all();
+  return db
+    .prepare(`
+      SELECT * FROM matches
+      WHERE status = 'not_started'
+        AND datetime(begin_at) >= datetime('now')
+        AND team1 != 'TBD'
+        AND team2 != 'TBD'
+    `)
+    .all();
 }
 
-
-export function updateMatchAnnounced(matchId: number){
-	const stmt = db.prepare(`
-		UPDATE matches
-		SET announced = 1
-		WHERE id = ?
-	`)
-	stmt.run(matchId);
-	console.log(`${Colors.Green}[DB]: Match ${matchId} marked as announced`);
+export function updateMatchAnnounced(matchId: number) {
+  const stmt = db.prepare(`
+    UPDATE matches
+    SET announced = 1
+    WHERE id = ?
+  `);
+  stmt.run(matchId);
+  console.log(`${Colors.Green}[DB]: Match ${matchId} marked as announced`);
 }
 
-export function updateMatchVotesClosed(matchId: number){
-	const stmt = db.prepare(`
-		UPDATE matches
-		SET votes_closed = 1
-		WHERE id = ?
-	`)
-	stmt.run(matchId);
-	console.log(`${Colors.Green}[DB]: Match ${matchId} marked as votes closed`);
+export function updateMatchVotesClosed(matchId: number) {
+  const stmt = db.prepare(`
+    UPDATE matches
+    SET votes_closed = 1
+    WHERE id = ?
+  `);
+  stmt.run(matchId);
+  console.log(`${Colors.Green}[DB]: Match ${matchId} marked as votes closed`);
 }

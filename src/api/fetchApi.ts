@@ -2,6 +2,7 @@ import { initEnv } from "../config/env";
 import { updateMatches } from "../db/matchDb";
 import { Match } from "../interface/match";
 import { Colors } from "../interface/color";
+import { ApiMatch } from "../interface/apiMatch";
 
 export async function fetchWorldsMatches() {
   const url =
@@ -20,7 +21,7 @@ export async function fetchWorldsMatches() {
     }
     console.log(`${Colors.Green}[SUCCESS]: Pandascore API fetched successfully${Colors.Reset}`);
 
-    const matches: Match[] = await res.json();
+    const matches: ApiMatch[] = await res.json();
     updateMatches(matches);
   } catch (err) {
     console.error(`${Colors.Red}[ERROR]: Failed to fetch/update matches: ${err}${Colors.Reset}`);
