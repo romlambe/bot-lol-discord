@@ -88,30 +88,69 @@ export function insertMatch(match: Match) {
 
 export function updateMatches(matches: Match[]) {
   console.log(`${Colors.Yellow}[LOG]: Updating database`);
-  const confirmedMatches = matches.filter(
-    each =>
-      each.opponents.length === 2 &&
-      each.opponents[0].opponent.acronym !== 'TBD' &&
-      each.opponents[1].opponent.acronym !== 'TBS'
-  );
+
+  const confirmedMatches = matches.filter(each => {
+    const hasValidTeams =
+      each.opponents.length === 2 ;
+
+    const isWorldsMatch =
+      each.league?.name === 'Worlds' ||
+      each.serie?.slug === 'league-of-legends-world-championship-2025' ||
+      each.serie?.slug === 'league-of-legends-world-championship-2025-playoffs';
+
+    return hasValidTeams && isWorldsMatch;
+  });
+
+  console.log(`${Colors.Blue}[LOG]: Found ${confirmedMatches.length} Worlds 2025 matches to insert.`);
   confirmedMatches.forEach(insertMatch);
 }
-
   // GETTERS
 
 export function getMatchById(pandascoreId: number) {
   return db.prepare(`SELECT * FROM matches WHERE pandascore_id = ?`).get(pandascoreId);
 }
 
-export function getNextMatches(limit= 5) {
-	return db
+export function getCurrentMatch() {
+  return db
+    .prepare(`
+      SELECT *
+      FROM matches
+      WHERE status = 'running'
+         OR status = 'in_progress'
+      ORDER BY datetime(begin_at) DESC
+      LIMIT 1
+    `)
+    .get();
+}
+
+export function getNextMatches(limit = 5) {
+  return db
     .prepare(`
       SELECT * FROM matches
-      WHERE datetime(begin_at) >= datetime('now')
-      ORDER BY datetime(begin_at) ASC
+      WHERE
+        (
+          datetime(begin_at) >= datetime('now')
+          OR status = 'running'
+          OR status = 'in_progress'
+        )
+      ORDER BY
+        CASE
+          WHEN status IN ('running', 'in_progress') THEN 0
+          ELSE 1
+        END,
+        datetime(begin_at) ASC
       LIMIT ?
     `)
     .all(limit);
+}
+
+export function getBetsForMatch(matchId: number) {
+  return db
+    .prepare(`
+      SELECT * FROM bets
+      WHERE match_id = ?
+    `)
+    .all(matchId);
 }
 
 export function getMatchNotStarted() {

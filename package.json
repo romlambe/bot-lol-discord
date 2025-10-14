@@ -9,15 +9,15 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "devDependencies": {
-    "@types/dotenv": "^6.1.1",
-    "@types/node": "^24.7.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
     "discord.js": "^14.23.2",
     "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@types/ws": "^8.18.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

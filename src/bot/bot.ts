@@ -15,12 +15,12 @@ export const startBot = async () => {
     const command = await import(`./commands/${file.replace('.ts', '').replace('.js', '')}`);
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
-      console.log(`${Colors.Cyan}[COMMAND]: Loaded command ${command.data.name}${Colors.Reset}`);
+      console.log(`${Colors.Purple}[BOT]: Loaded command ${command.data.name}${Colors.Reset}`);
     }
   }
 
   client.on('ready', () => {
-    console.log(`${Colors.Green}[SUCCESS]: Discord Bot started as ${client.user?.tag}${Colors.Reset}`);
+    console.log(`${Colors.Purple}[BOT]: Discord Bot started as ${client.user?.tag}${Colors.Reset}`);
   });
 
   // Handle slash command interactions
