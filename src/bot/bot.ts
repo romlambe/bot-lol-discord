@@ -3,6 +3,7 @@ import { Colors } from '../interface/color';
 import fs from 'fs';
 import path from 'path';
 import { scheduleAnnouncements } from './utils/scheduleAnnouncement';
+import { interactionCreate } from './events/interactionCreate';
 
 export const startBot = async () => {
   const client = new Client({ intents: [GatewayIntentBits.Guilds] }) as any;
@@ -41,6 +42,8 @@ export const startBot = async () => {
   });
 
   // Handle slash command interactions
+  interactionCreate(client);
+
   client.on(Events.InteractionCreate, async (interaction: any) => {
 	if (!interaction.isChatInputCommand()) return;
 

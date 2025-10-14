@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS bets (
   predicted_bo_count INTEGER,
   points INTEGER DEFAULT 0,
   FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(match_id) REFERENCES matches(id)
+  FOREIGN KEY(match_id) REFERENCES matches(pandascore_id),
+  UNIQUE(user_id, match_id)
 );
 `);
 

@@ -25,5 +25,5 @@ export function scheduleAnnouncements(channel: TextChannel, minutesBefore: numbe
 			}
 
 		});
-	}, 1000 * 10);
+	}, 1000 * 20);
 }

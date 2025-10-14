@@ -72,15 +72,7 @@ export function interactionCreate(client: Client) {
 				ephemeral: true
 			});
 		} else {
-			// Informer l'utilisateur de ce qu'il lui reste à faire
-			const missingInfo = [];
-			if (!userVotes.winner) missingInfo.push("le gagnant");
-			if (!userVotes.score) missingInfo.push("le score");
-
-			await interaction.reply({
-				content: `Veuillez également choisir ${missingInfo.join(" et ")} pour compléter votre pari.`,
-				ephemeral: true
-			});
+			await interaction.deferUpdate();
 		}
 	});
 }
