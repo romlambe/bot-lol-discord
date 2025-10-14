@@ -102,3 +102,23 @@ export function updateMatches(matches: Match[]) {
 export function getMatchById(pandascoreId: number) {
   return db.prepare(`SELECT * FROM matches WHERE pandascore_id = ?`).get(pandascoreId);
 }
+
+export function getNextMatches(limit= 5) {
+	return db
+    .prepare(`
+      SELECT * FROM matches
+      WHERE datetime(begin_at) >= datetime('now')
+      ORDER BY datetime(begin_at) ASC
+      LIMIT ?
+    `)
+    .all(limit);
+}
+
+export function getMatchNotStarted() {
+	return db
+		.prepare(`
+			SELECT * FROM matches
+			WHERE status = 'not_started' && datetime(begin_at) >= datetime('now') && opponents[0].opponent.acronym != 'TBD' && opponents[1].opponent.acronym != 'TBS'
+		`)
+		.all();
+}
