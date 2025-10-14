@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS bets (
   user_id INTEGER,
   match_id INTEGER,
   predicted_winner TEXT,
-  predicted_bo_count INTEGER,
+  predicted_score TEXT,
   points INTEGER DEFAULT 0,
   FOREIGN KEY(user_id) REFERENCES users(id),
   FOREIGN KEY(match_id) REFERENCES matches(pandascore_id),

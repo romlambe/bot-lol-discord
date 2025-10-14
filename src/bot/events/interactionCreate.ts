@@ -58,10 +58,10 @@ export function interactionCreate(client: Client) {
 			const user = getUserByDiscordId(userId) as any;
 
 			// Extraire le nombre du score (ex: "3-0" -> 3)
-			const boCount = parseInt(userVotes.score.split('-')[0]);
+			// const boCount = parseInt(userVotes.score.split('-')[0]);
 
 			// Sauvegarder le pari dans la base de données
-			createOrUpdateBet(user.id, matchId, userVotes.winner, boCount);
+			createOrUpdateBet(user.id, matchId, userVotes.winner, userVotes.score);
 
 			// Nettoyer le vote temporaire
 			currentVotes[matchId] = currentVotes[matchId].filter(v => v.userId !== userId);

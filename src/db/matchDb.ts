@@ -126,7 +126,7 @@ export function updateMatches(apiMatches: ApiMatch[]) {
   });
 
   console.log(`${Colors.Blue}[LOG]: Found ${confirmedMatches.length} Worlds 2025 matches to insert.`);
-  
+
   confirmedMatches.forEach(apiMatch => {
     const dbMatch = convertApiMatchToDbMatch(apiMatch);
     insertMatch(dbMatch);
@@ -212,4 +212,38 @@ export function updateMatchVotesClosed(matchId: number) {
   `);
   stmt.run(matchId);
   console.log(`${Colors.Green}[DB]: Match ${matchId} marked as votes closed`);
+}
+
+export function getMatchResults(matchId: number) {
+	return db.prepare(`
+		SELECT
+			pandascore_id,
+			name,
+			team1,
+			team2,
+			score_team1,
+			score_team2,
+			status
+		FROM matches
+		WHERE pandascore_id = ?
+	`).get(matchId);
+}
+
+export function updateMatchResults(matchId: number, status: string){
+	const stmt = db.prepare(`
+		UPDATE matches
+		SET status = ?
+		WHERE pandascore_id = ?
+	`)
+	stmt.run(status, matchId);
+	console.log(`${Colors.Green}[DB]: Match ${matchId} results updated to ${status}`);
+}
+
+
+export function getFinishedMatches() {
+	return db.prepare(`
+		SELECT * FROM matches
+		WHERE status = 'finished'
+		AND pandascore_id IN (SELECT DISTINCT match_id FROM bets)
+	`).all();
 }

@@ -5,15 +5,15 @@ import { Colors } from '../interface/color';
 
     // UPDATE
 
-export function createOrUpdateBet(userId: number, matchId: number, predictedWinner: string, predictedBoCount: number) {
+export function createOrUpdateBet(userId: number, matchId: number, predictedWinner: string, predictedScore: string) {
   const stmt = db.prepare(`
-    INSERT INTO bets (user_id, match_id, predicted_winner, predicted_bo_count)
+    INSERT INTO bets (user_id, match_id, predicted_winner, predicted_score)
     VALUES (?, ?, ?, ?)
     ON CONFLICT(user_id, match_id) DO UPDATE SET
       predicted_winner = excluded.predicted_winner,
-      predicted_bo_count = excluded.predicted_bo_count
+      predicted_score = excluded.predicted_score
   `);
-  stmt.run(userId, matchId, predictedWinner, predictedBoCount);
+  stmt.run(userId, matchId, predictedWinner, predictedScore);
   console.log(`${Colors.Blue}[DB]: Bet placed or updated for user ${userId} on match ${matchId}`);
 }
 
@@ -36,7 +36,7 @@ export function getMatchBets(matchId: number) {
       u.username,
       u.discord_id,
       b.predicted_winner,
-      b.predicted_bo_count,
+      b.predicted_score,
       b.points
     FROM bets b
     JOIN users u ON u.id = b.user_id
