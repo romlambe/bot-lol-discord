@@ -31,7 +31,7 @@ export function getUserBets(userId: number) {
 
 export function getMatchBets(matchId: number) {
   return db.prepare(`
-    SELECT 
+    SELECT
       b.id AS bet_id,
       u.username,
       u.discord_id,

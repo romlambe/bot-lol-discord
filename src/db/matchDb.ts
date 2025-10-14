@@ -157,7 +157,31 @@ export function getMatchNotStarted() {
 	return db
 		.prepare(`
 			SELECT * FROM matches
-			WHERE status = 'not_started' && datetime(begin_at) >= datetime('now') && opponents[0].opponent.acronym != 'TBD' && opponents[1].opponent.acronym != 'TBS'
+			WHERE status = 'not_started'
+				AND datetime(begin_at) >= datetime('now')
+				AND team1 != 'TBD'
+				AND team2 != 'TBD'
 		`)
 		.all();
+}
+
+
+export function updateMatchAnnounced(matchId: number){
+	const stmt = db.prepare(`
+		UPDATE matches
+		SET announced = 1
+		WHERE id = ?
+	`)
+	stmt.run(matchId);
+	console.log(`${Colors.Green}[DB]: Match ${matchId} marked as announced`);
+}
+
+export function updateMatchVotesClosed(matchId: number){
+	const stmt = db.prepare(`
+		UPDATE matches
+		SET votes_closed = 1
+		WHERE id = ?
+	`)
+	stmt.run(matchId);
+	console.log(`${Colors.Green}[DB]: Match ${matchId} marked as votes closed`);
 }
