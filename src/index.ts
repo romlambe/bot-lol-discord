@@ -4,7 +4,7 @@ import { startBot } from './bot/bot';
 import { Colors } from './interface/color';
 import { deployCommands } from './bot/deployCommands';
 import { processMatchResults } from './bot/utils/processMatchResults';
-import { updateMatchResults, getFinishedMatches } from './db/matchDb';
+import { updateMatchResults, getFinishedMatches, markPointsCalculated } from './db/matchDb';
 
 
 // ENV
@@ -19,11 +19,16 @@ deployCommands();
 })();
 
 setInterval(() => {
-  fetchWorldsMatches();
+	fetchWorldsMatches();
+}, 10 * 1000)
 
+setInterval(() => {
   const finishedMatches = getFinishedMatches();
-  finishedMatches.forEach((match: any) => {
-    processMatchResults(match.pandascore_id);
-	updateMatchResults(match.pandascore_id, 'processed');
-  });
-}, 10 * 1000);
+  if (finishedMatches.length > 0){
+	finishedMatches.forEach((match: any) => {
+		processMatchResults(match.pandascore_id);
+		markPointsCalculated(match.pandascore_id);
+ 	});
+  }
+
+},10 * 1000);

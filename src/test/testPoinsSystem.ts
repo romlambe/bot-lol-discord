@@ -1,25 +1,27 @@
 import db from '../db/initDb';
 import { processMatchResults } from '../bot/utils/processMatchResults';
+import { getFinishedMatches, markPointsCalculated } from '../db/matchDb';
 import { Colors } from '../interface/color';
 
-// Clear tables for a clean test run
-db.prepare('DELETE FROM bets').run();
-db.prepare('DELETE FROM users').run();
-db.prepare('DELETE FROM matches').run();
+console.log(`${Colors.Cyan}=== TEST : POINTS CALCULÉS UNE SEULE FOIS ===${Colors.Reset}\n`);
 
+// 1. Nettoyer et préparer les données
+console.log(`${Colors.Yellow}🧹 Nettoyage...${Colors.Reset}`);
+db.prepare(`DELETE FROM matches WHERE pandascore_id = 777777`).run();
+db.prepare(`DELETE FROM users WHERE discord_id LIKE 'test_%'`).run();
+db.prepare(`DELETE FROM bets WHERE match_id = 777777`).run();
 
-console.log(`${Colors.Cyan}=== TEST DU SYSTÈME DE POINTS ===${Colors.Reset}\n`);
+// 2. Créer un match terminé
+console.log(`${Colors.Yellow}📊 Création d'un match terminé...${Colors.Reset}`);
+const matchId = 777777;
 
-// 1. Créer un match de test terminé
-const matchId = 888888;
-const insertMatch = db.prepare(`
-  INSERT OR REPLACE INTO matches (
+db.prepare(`
+  INSERT INTO matches (
     pandascore_id, name, begin_at, status, tournament,
-    team1, team2, bo_count, score_team1, score_team2
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-insertMatch.run(
+    team1, team2, bo_count, score_team1, score_team2,
+    announced, votes_closed, point_calculated
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
   matchId,
   'TEST - T1 vs G2',
   new Date().toISOString(),
@@ -29,79 +31,109 @@ insertMatch.run(
   'G2',
   5,
   3,  // T1 gagne 3-1
-  1
+  1,
+  1,
+  1,
+  0   // ⚠️ Points PAS ENCORE calculés
 );
 
-console.log(`${Colors.Green}✅ Match de test créé: T1 vs G2 (3-1, T1 gagne)${Colors.Reset}\n`);
+console.log(`${Colors.Green}✅ Match créé: T1 vs G2 (Score final: 3-1, T1 gagne)${Colors.Reset}\n`);
 
-// 2. Créer des utilisateurs de test
-const users = [
-  { discord_id: 'test_user_1', username: 'Alice' },
-  { discord_id: 'test_user_2', username: 'Bob' },
-  { discord_id: 'test_user_3', username: 'Charlie' },
-];
+// 3. Créer un utilisateur de test
+console.log(`${Colors.Yellow}👤 Création d'un utilisateur...${Colors.Reset}`);
+db.prepare(`
+  INSERT INTO users (discord_id, username, points)
+  VALUES (?, ?, ?)
+`).run('test_alice', 'Alice', 0);
 
-users.forEach(user => {
-  db.prepare(`
-    INSERT OR REPLACE INTO users (discord_id, username, points)
-    VALUES (?, ?, 0)
-  `).run(user.discord_id, user.username);
-});
+const user = db.prepare(`SELECT * FROM users WHERE discord_id = ?`).get('test_alice') as any;
+console.log(`${Colors.Green}✅ Utilisateur créé: ${user.username} (Points initiaux: ${user.points})${Colors.Reset}\n`);
 
-console.log(`${Colors.Green}✅ 3 utilisateurs de test créés${Colors.Reset}\n`);
+// 4. Créer un pari PARFAIT
+console.log(`${Colors.Yellow}🎯 Création d'un pari...${Colors.Reset}`);
+db.prepare(`
+  INSERT INTO bets (user_id, match_id, predicted_winner, predicted_score, points)
+  VALUES (?, ?, ?, ?, ?)
+`).run(user.id, matchId, 'T1', '3-1', 0);
 
-// 3. Créer des paris de test avec différents scénarios
-const bets = [
-  { user: 'Alice', winner: 'T1', score: 3, comment: 'Prédiction parfaite ✅' },
-  { user: 'Bob', winner: 'T1', score: 1, comment: 'Bon gagnant, mauvais score' },
-  { user: 'Charlie', winner: 'G2', score: 3, comment: 'Mauvais gagnant' },
-];
+console.log(`${Colors.Green}✅ Pari créé: Alice prédit T1 en 3-1 (prédiction parfaite !)${Colors.Reset}\n`);
 
-bets.forEach((bet, index) => {
-  const user = users.find(u => u.username === bet.user);
-  const userId = db.prepare(`SELECT id FROM users WHERE discord_id = ?`).get(user!.discord_id) as any;
+// 5. PREMIER CALCUL - Simuler le premier interval
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}`);
+console.log(`${Colors.Cyan}📌 PREMIER INTERVAL (Simulation)${Colors.Reset}`);
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}\n`);
 
-  db.prepare(`
-    INSERT OR REPLACE INTO bets (user_id, match_id, predicted_winner, predicted_score, points)
-    VALUES (?, ?, ?, ?, 0)
-  `).run(userId.id, matchId, bet.winner, bet.score);
+let finishedMatches = getFinishedMatches();
+console.log(`${Colors.Yellow}🔍 Matchs terminés trouvés: ${finishedMatches.length}${Colors.Reset}`);
 
-  console.log(`${Colors.Yellow}📊 Pari ${index + 1}: ${bet.user} → ${bet.winner} en ${bet.score} (${bet.comment})${Colors.Reset}`);
-});
+if (finishedMatches.length > 0) {
+  const match = finishedMatches[0] as any;
+  console.log(`   - Match ${match.pandascore_id}: ${match.name}`);
+  console.log(`   - point_calculated: ${match.point_calculated}\n`);
 
-console.log(`\n${Colors.Cyan}--- AVANT LE CALCUL DES POINTS ---${Colors.Reset}`);
-users.forEach(user => {
-  const dbUser = db.prepare(`SELECT * FROM users WHERE discord_id = ?`).get(user.discord_id) as any;
-  console.log(`${user.username}: ${dbUser.points} points`);
-});
+  console.log(`${Colors.Green}⚡ Calcul des points...${Colors.Reset}`);
+  processMatchResults(matchId);
+  markPointsCalculated(matchId);
+}
 
-// 4. Exécuter le calcul des points
-console.log(`\n${Colors.Cyan}=== EXÉCUTION DU CALCUL ===\n${Colors.Reset}`);
-processMatchResults(matchId);
+// Vérifier les points après le premier calcul
+const userAfter1 = db.prepare(`SELECT * FROM users WHERE discord_id = ?`).get('test_alice') as any;
+const betAfter1 = db.prepare(`SELECT * FROM bets WHERE match_id = ?`).get(matchId) as any;
+const matchAfter1 = db.prepare(`SELECT * FROM matches WHERE pandascore_id = ?`).get(matchId) as any;
 
-// 5. Afficher les résultats
-console.log(`\n${Colors.Cyan}--- APRÈS LE CALCUL DES POINTS ---${Colors.Reset}`);
-users.forEach(user => {
-  const dbUser = db.prepare(`SELECT * FROM users WHERE discord_id = ?`).get(user.discord_id) as any;
-  const bet = db.prepare(`
-    SELECT b.*, u.username
-    FROM bets b
-    JOIN users u ON u.id = b.user_id
-    WHERE u.discord_id = ? AND b.match_id = ?
-  `).get(user.discord_id, matchId) as any;
+console.log(`\n${Colors.Green}✅ Résultats après le PREMIER calcul:${Colors.Reset}`);
+console.log(`   - Points d'Alice: ${userAfter1.points} (était 0)`);
+console.log(`   - Points du pari: ${betAfter1.points}`);
+console.log(`   - point_calculated du match: ${matchAfter1.point_calculated}\n`);
 
-  console.log(`${Colors.Green}${user.username}: ${dbUser.points} points (+${bet.points} pour ce match)${Colors.Reset}`);
-});
+// 6. DEUXIÈME CALCUL - Simuler le deuxième interval (10 secondes plus tard)
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}`);
+console.log(`${Colors.Cyan}📌 DEUXIÈME INTERVAL (Simulation)${Colors.Reset}`);
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}\n`);
 
-// 6. Afficher le résumé
-console.log(`\n${Colors.Cyan}=== RÉSUMÉ ===${Colors.Reset}`);
-console.log(`Match: T1 vs G2, Score final: 3-1, Gagnant: T1`);
-console.log(`\nRègles de points:`);
-console.log(`- Gagnant correct: +10 points`);
-console.log(`- Gagnant ET score corrects: +35 points (10 + 25)`);
-console.log(`\nRésultats attendus:`);
-console.log(`- Alice (T1 en 3): 35 points ✅`);
-console.log(`- Bob (T1 en 2): 10 points ✅`);
-console.log(`- Charlie (G2 en 3): 0 points ❌`);
+finishedMatches = getFinishedMatches();
+console.log(`${Colors.Yellow}🔍 Matchs terminés trouvés: ${finishedMatches.length}${Colors.Reset}`);
 
-console.log(`\n${Colors.Green}✅ Test terminé !${Colors.Reset}`);
+if (finishedMatches.length > 0) {
+  console.log(`${Colors.Red}❌ PROBLÈME ! Le match est encore trouvé alors qu'il a déjà été traité !${Colors.Reset}\n`);
+  processMatchResults(matchId);
+  markPointsCalculated(matchId);
+} else {
+  console.log(`${Colors.Green}✅ PARFAIT ! Le match n'est plus trouvé (déjà traité)${Colors.Reset}\n`);
+}
+
+// Vérifier les points après le deuxième calcul
+const userAfter2 = db.prepare(`SELECT * FROM users WHERE discord_id = ?`).get('test_alice') as any;
+const betAfter2 = db.prepare(`SELECT * FROM bets WHERE match_id = ?`).get(matchId) as any;
+
+console.log(`${Colors.Green}✅ Résultats après le DEUXIÈME calcul:${Colors.Reset}`);
+console.log(`   - Points d'Alice: ${userAfter2.points} (était ${userAfter1.points})`);
+console.log(`   - Points du pari: ${betAfter2.points}\n`);
+
+// 7. RÉSUMÉ FINAL
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}`);
+console.log(`${Colors.Cyan}🎯 RÉSUMÉ FINAL${Colors.Reset}`);
+console.log(`${Colors.Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Colors.Reset}\n`);
+
+const expectedPoints = 35; // Gagnant correct (10) + Score exact (25)
+
+if (userAfter1.points === expectedPoints && userAfter2.points === expectedPoints) {
+  console.log(`${Colors.Green}✅ ✅ ✅ TEST RÉUSSI ! ✅ ✅ ✅${Colors.Reset}`);
+  console.log(`\n${Colors.Green}Les points ont été calculés UNE SEULE FOIS :${Colors.Reset}`);
+  console.log(`   - Points attendus: ${expectedPoints}`);
+  console.log(`   - Points obtenus: ${userAfter2.points}`);
+  console.log(`   - Premier calcul: +${userAfter1.points} points ✅`);
+  console.log(`   - Deuxième calcul: +${userAfter2.points - userAfter1.points} points ✅`);
+} else if (userAfter2.points > userAfter1.points) {
+  console.log(`${Colors.Red}❌ ❌ ❌ TEST ÉCHOUÉ ! ❌ ❌ ❌${Colors.Reset}`);
+  console.log(`\n${Colors.Red}Les points ont été calculés PLUSIEURS FOIS :${Colors.Reset}`);
+  console.log(`   - Après premier calcul: ${userAfter1.points} points`);
+  console.log(`   - Après deuxième calcul: ${userAfter2.points} points`);
+  console.log(`   - Différence: +${userAfter2.points - userAfter1.points} points (devrait être 0 !)`);
+} else {
+  console.log(`${Colors.Yellow}⚠️ Résultat inattendu${Colors.Reset}`);
+  console.log(`   - Points après 1er calcul: ${userAfter1.points}`);
+  console.log(`   - Points après 2ème calcul: ${userAfter2.points}`);
+}
+
+console.log(`\n${Colors.Green}🎉 Test terminé !${Colors.Reset}\n`);

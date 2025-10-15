@@ -82,33 +82,7 @@ export function interactionCreate(client: Client) {
 				ephemeral: true
 			});
 		} else {
-			const message = interaction.message;
-			const components = message.components;
-
-			const updatedComponents = components.map((row: any) => {
-				const buttons = row.components.map((button: any) => {
-					const newButton = {
-						type: button.type,
-						custom_id: button.customId,
-						label: button.label,
-						style: button.style,
-					};
-
-					if (button.customId === interaction.customId) {
-						newButton.style = 3;
-					}
-
-					return newButton;
-				});
-
-				return {
-					type: 1,
-					components: buttons,
-				};
-			});
-			await interaction.update({
-				components: updatedComponents,
-			});
+			await interaction.deferUpdate();
 		}
 	});
 }

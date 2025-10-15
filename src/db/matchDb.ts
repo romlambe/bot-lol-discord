@@ -239,11 +239,21 @@ export function updateMatchResults(matchId: number, status: string){
 	console.log(`${Colors.Green}[DB]: Match ${matchId} results updated to ${status}`);
 }
 
+export function markPointsCalculated(matchId: number) {
+	const stmt = db.prepare(`
+		UPDATE matches
+		SET point_calculated = 1
+		WHERE pandascore_id = ?
+	`)
+	stmt.run(matchId);
+}
+
 
 export function getFinishedMatches() {
 	return db.prepare(`
 		SELECT * FROM matches
 		WHERE status = 'finished'
+		AND point_calculated = 0
 		AND pandascore_id IN (SELECT DISTINCT match_id FROM bets)
 	`).all();
 }
