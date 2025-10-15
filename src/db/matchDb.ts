@@ -257,3 +257,22 @@ export function getFinishedMatches() {
 		AND pandascore_id IN (SELECT DISTINCT match_id FROM bets)
 	`).all();
 }
+
+
+export function markResultAnnounced(matchId: number) {
+	const stmt = db.prepare(`
+		UPDATE matches
+		SET result_announced = 1
+		WHERE pandascore_id = ?
+	`)
+	stmt.run(matchId);
+}
+
+export function getFinishedMatchesNotAnnounced() {
+	return db.prepare(`
+		SELECT * FROM matches
+		WHERE status = 'finished'
+		AND point_calculated = 0
+		AND pandascore_id IN (SELECT DISTINCT match_id FROM bets)
+	`).all();
+}

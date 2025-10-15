@@ -1,7 +1,9 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-const db = new Database(path.join(__dirname, './bot-lol.db'));
+// const db = new Database(path.join(__dirname, './bot-lol.db'));
+const dbPath = process.env.DB_PATH || path.join(__dirname, './bot-lol.db');
+const db = new Database(dbPath);
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS matches (
@@ -18,7 +20,8 @@ CREATE TABLE IF NOT EXISTS matches (
   score_team2 INTEGER DEFAULT 0,
   announced INTEGER DEFAULT 0,
   votes_closed INTEGER DEFAULT 0,
-  point_calculated INTEGER DEFAULT 0
+  point_calculated INTEGER DEFAULT 0,
+  result_announced INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS users (

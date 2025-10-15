@@ -1,0 +1,14 @@
+services:
+  discord-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: discord-bot
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DB_PATH=/app/data/bot-lol.db
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
