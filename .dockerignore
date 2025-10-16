@@ -8,5 +8,7 @@ npm-debug.log
 dist
 data/
 src/db/bot-lol.db
+src/db/bot-lol-prod.db
+src/db/bot-lol-test.db
 src/test/
 src/api/testApi.ts

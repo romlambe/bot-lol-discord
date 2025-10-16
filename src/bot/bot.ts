@@ -5,7 +5,7 @@ import path from 'path';
 import { scheduleAnnouncements } from './utils/scheduleAnnouncement';
 import { interactionCreate } from './events/interactionCreate';
 
-export const startBot = async () => {
+export const startBot = async (channelId: string, discordToken: string) => {
   const client = new Client({ intents: [GatewayIntentBits.Guilds] }) as any;
   client.commands = new Collection();
 
@@ -24,9 +24,8 @@ export const startBot = async () => {
   client.on('ready', async () => {
 	console.log(`${Colors.Purple}[BOT]: Discord Bot started as ${client.user?.tag}${Colors.Reset}`);
 
-	const channelId = process.env.CHANNEL_ID;
 	if (!channelId){
-		console.log(`${Colors.Red}[ERROR]: CHANNEL_ID missing in .env${Colors.Reset}`);
+		console.log(`${Colors.Red}[ERROR]: channelId missing in .env${Colors.Reset}`);
 		return;
 	}
 
@@ -70,7 +69,7 @@ export const startBot = async () => {
 	}
   });
 
-  await client.login(process.env.DISCORD_TOKEN);
+  await client.login(discordToken);
 
   return client;
 };

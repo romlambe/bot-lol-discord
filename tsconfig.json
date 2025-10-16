@@ -7,6 +7,6 @@
     "esModuleInterop": true,
     "strict": false
   },
-  "include": ["src"],
+  "include": ["src", "data/initProdDb.ts", "data/initTestDb.ts"],
   "exclude": ["src/test, src/testApi.ts"]
 }

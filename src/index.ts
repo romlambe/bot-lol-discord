@@ -12,14 +12,32 @@ import { announceResult } from './bot/utils/announceResult';
 // ENV
 initEnv();
 
+// TEST OR PROD
+console.log(`${Colors.Cyan}[DEBUG]: process.env.ENVIRONMENT = "${process.env.ENVIRONMENT}"${Colors.Reset}`);
+const isProd = process.env.ENVIRONMENT === 'prod';
+console.log(`${Colors.Cyan}[INFO]: Running in ${isProd ? 'PRODUCTION' : 'TEST'} mode${Colors.Reset}`);
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const CLIENT_ID = isProd ? process.env.CLIENT_ID : process.env.CLIENT_ID_TEST;
+const CHANNEL_ID = isProd ? process.env.CHANNEL_ID : process.env.CHANNEL_ID_TEST;
+const GUILD_ID = isProd ? process.env.GUILD_ID : process.env.GUILD_ID_TEST;
+console.log(`${DISCORD_TOKEN}`);
+console.log(`${CLIENT_ID}`);
+console.log(`${CHANNEL_ID}`);
+console.log(`${GUILD_ID}`);
+if (!DISCORD_TOKEN || !CLIENT_ID || !CHANNEL_ID || !GUILD_ID) {
+  console.error(`${Colors.Red}[ERROR]: Missing required environment variables${Colors.Reset}`);
+  process.exit(1);
+}
 console.log(`${Colors.Yellow}[LOG]: Bot started...${Colors.Reset}`);
-deployCommands();
 
-// Start Discord bot
+// COMMAND DEPLOYEMENT
+deployCommands(DISCORD_TOKEN, CLIENT_ID, GUILD_ID);
+
+// START FETCH AND BOT ROUTINE
 let botClient: any = null;
 (async () => {
-  botClient = await startBot();
-})();
+  botClient = await startBot(CHANNEL_ID, DISCORD_TOKEN);
+})()
 
 setInterval(() => {
 	fetchWorldsMatches();
@@ -39,7 +57,7 @@ setInterval(async () => {
   const matchesToAnnounce = getFinishedMatchesNotAnnounced();
 
   	if (matchesToAnnounce.length > 0) {
-    const channelId = process.env.CHANNEL_ID;
+    const channelId = CHANNEL_ID;
     if (channelId) {
       try {
         const channel = await botClient.channels.fetch(channelId);

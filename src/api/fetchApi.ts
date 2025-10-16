@@ -28,4 +28,4 @@ export async function fetchWorldsMatches() {
   }
 }
 
-fetchWorldsMatches();
+// fetchWorldsMatches();

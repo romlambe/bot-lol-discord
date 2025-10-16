@@ -6,8 +6,9 @@ services:
     container_name: discord-bot
     restart: unless-stopped
     environment:
+      - ENVIRONMENT=${ENVIRONMENT}
       - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - DB_PATH=/app/data/bot-lol.db
+      - DB_PATH=/app/data/bot-lol-${ENVIRONMENT}.db
     volumes:
       - ./data:/app/data
     env_file:

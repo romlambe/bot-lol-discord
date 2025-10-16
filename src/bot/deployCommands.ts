@@ -6,14 +6,10 @@ import { Colors } from '../interface/color';
 
 dotenv.config();
 
-export async function deployCommands() {
+export async function deployCommands(discordToken: string, clientId: string, guildId: string) {
   try {
-    const CLIENT_ID = process.env.CLIENT_ID;
-    const GUILD_ID = process.env.GUILD_ID;
-    const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-
-    if (!CLIENT_ID || !GUILD_ID || !DISCORD_TOKEN) {
-      console.log(`${Colors.Red}[ERROR]: Missing CLIENT_ID, GUILD_ID, or DISCORD_TOKEN${Colors.Reset}`);
+    if (!clientId || !guildId || !discordToken) {
+      console.log(`${Colors.Red}[ERROR]: Missing clientId, guildId, or discordToken${Colors.Reset}`);
       return;
     }
 
@@ -34,11 +30,11 @@ export async function deployCommands() {
       }
     }
 
-    const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
+    const rest = new REST({ version: '10' }).setToken(discordToken);
 
     console.log(`${Colors.Purple}[BOT]: Refreshing application (/) commands...${Colors.Reset}`);
 
-    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
 
     console.log(`${Colors.Green}[SUCCESS]: Successfully deployed ${commands.length} commands${Colors.Reset}`);
   } catch (error) {
