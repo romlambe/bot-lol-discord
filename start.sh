@@ -3,6 +3,13 @@
 echo "Launch bot in (prod/test) ? "
 read ENV
 
+echo "Cleaning previous containers..."
+docker-compose down --remove-orphans
+docker rmi bot-lol-discord_discord-bot:latest
+docker volume prune -f
+docker system prune -f 
+echo "Containers are cleaned!"
+
 ENV=$(echo "$ENV" | tr '[:upper:]' '[:lower:]')
 
 if [ "$ENV" != "prod" ] && [ "$ENV" != "test" ]; then
