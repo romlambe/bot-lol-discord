@@ -35,7 +35,7 @@ export async function execute(interaction) {
 
   if (bets.length) {
     const betList = bets
-      .map(bet => `• <@${bet.user_id}> a parié **${bet.amount}** sur **${bet.team_choice}**`)
+      .map(bet => `• <@${bet.username}> a parié **${bet.amount}** sur **${bet.team_choice}**`)
       .join('\n');
 
     embed.addFields({ name: 'Current bet', value: betList });
