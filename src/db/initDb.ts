@@ -17,7 +17,6 @@ const dbName = process.env.ENVIRONMENT;
 const dbPath = process.env.DB_PATH || path.join(__dirname, `../../data/bot-lol-${dbName}.db`);
 
 const db = new Database(dbPath, {
-  memory: false,
   fileMustExist: false,
   timeout: 5000
 });
