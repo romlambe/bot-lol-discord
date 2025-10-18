@@ -19,4 +19,8 @@ else
   DISCORD_TOKEN=$(grep "^DISCORD_TOKEN_TEST=" .env | cut -d '=' -f2)
 fi
 
-ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up --build
+if [ "$ENV" = "prod" ]; then
+  ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up -d --build
+else
+  ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up --build
+fi

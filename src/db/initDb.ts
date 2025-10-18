@@ -5,7 +5,6 @@ import path from 'path';
 /* MaJ - RAM usage:
 
 SQLITE3: db { 
-memory: choose stockage,
 pragma { 
   cache_size: cache limite,
   temp_store: temporary table on file,
