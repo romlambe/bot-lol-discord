@@ -3,85 +3,46 @@ import { Match } from '../interface/match';
 import { ApiMatch } from '../interface/apiMatch';
 import { Colors } from '../interface/color';
 
-// MATCHES
+/* MaJ - RAM usage:
+
+SQLITE3: db { 
+transaction : group db commit.
+*/
 
 // UPDATE
 
 export function insertMatch(match: Match) {
   const insert = db.prepare(`
     INSERT OR IGNORE INTO matches (
-      pandascore_id,
-      name,
-      begin_at,
-      status,
-      tournament,
-      team1,
-      team2,
-      bo_count,
-      score_team1,
-      score_team2
+      pandascore_id, name, begin_at, status, tournament,
+      team1, team2, bo_count, score_team1, score_team2
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  insert.run(
-    match.pandascore_id,
-    match.name,
-    match.begin_at,
-    match.status,
-    match.tournament,
-    match.team1,
-    match.team2,
-    match.bo_count,
-    match.score_team1,
-    match.score_team2
-  );
-
+  
   const update = db.prepare(`
     UPDATE matches SET
-      name = ?,
-      begin_at = ?,
-      status = ?,
-      tournament = ?,
-      team1 = ?,
-      team2 = ?,
-      bo_count = ?,
-      score_team1 = ?,
-      score_team2 = ?
+      name = ?, begin_at = ?, status = ?, tournament = ?,
+      team1 = ?, team2 = ?, bo_count = ?, score_team1 = ?, score_team2 = ?
     WHERE pandascore_id = ? AND (
-      name != ? OR begin_at != ? OR status != ? OR tournament != ? OR team1 != ? OR team2 != ? OR
-      bo_count != ? OR score_team1 != ? OR score_team2 != ?
+      name != ? OR begin_at != ? OR status != ? OR tournament != ? OR 
+      team1 != ? OR team2 != ? OR bo_count != ? OR score_team1 != ? OR score_team2 != ?
     )
   `);
 
-  const result = update.run(
-    match.name,
-    match.begin_at,
-    match.status,
-    match.tournament,
-    match.team1,
-    match.team2,
-    match.bo_count,
-    match.score_team1,
-    match.score_team2,
-    match.pandascore_id,
-    match.name,
-    match.begin_at,
-    match.status,
-    match.tournament,
-    match.team1,
-    match.team2,
-    match.bo_count,
-    match.score_team1,
-    match.score_team2
+  insert.run(
+    match.pandascore_id, match.name, match.begin_at, match.status, match.tournament,
+    match.team1, match.team2, match.bo_count, match.score_team1, match.score_team2
   );
 
-  if (result.changes > 0) {
-    console.log(`${Colors.Blue}[DB]: Match updated in DB: ${match.name} (${match.team1} vs ${match.team2})`);
-  } else {
-    console.log(`${Colors.Orange}[DB]: No change for match: ${match.name} (${match.team1} vs ${match.team2})`);
-  }
+  update.run(
+    match.name, match.begin_at, match.status, match.tournament,
+    match.team1, match.team2, match.bo_count, match.score_team1, match.score_team2,
+    match.pandascore_id,
+    match.name, match.begin_at, match.status, match.tournament,
+    match.team1, match.team2, match.bo_count, match.score_team1, match.score_team2
+  );
 }
 
-// Convertir les données de l'API vers le format BD
 function convertApiMatchToDbMatch(apiMatch: ApiMatch): Match {
   const team1 = apiMatch.opponents[0]?.opponent.acronym ?? 'TBD';
   const team2 = apiMatch.opponents[1]?.opponent.acronym ?? 'TBD';
@@ -90,7 +51,7 @@ function convertApiMatchToDbMatch(apiMatch: ApiMatch): Match {
   const score2 = apiMatch.results.find(each => each.team_id === apiMatch.opponents[1]?.opponent.id)?.score ?? 0;
 
   return {
-    id: 0, // sera généré par la BD
+    id: 0,
     pandascore_id: apiMatch.id,
     name: apiMatch.name,
     begin_at: apiMatch.begin_at,
@@ -106,7 +67,6 @@ function convertApiMatchToDbMatch(apiMatch: ApiMatch): Match {
   };
 }
 
-// Filtrer les matchs Worlds comme dans le code Go
 function isWorldsMatch(match: ApiMatch): boolean {
   return (
     match.league?.name === 'Worlds' ||
@@ -121,16 +81,23 @@ export function updateMatches(apiMatches: ApiMatch[]) {
   const confirmedMatches = apiMatches.filter(each => {
     const hasValidTeams = each.opponents.length === 2;
     const isWorlds = isWorldsMatch(each);
-
     return hasValidTeams && isWorlds;
   });
 
   console.log(`${Colors.Blue}[LOG]: Found ${confirmedMatches.length} Worlds 2025 matches to insert.`);
 
-  confirmedMatches.forEach(apiMatch => {
-    const dbMatch = convertApiMatchToDbMatch(apiMatch);
-    insertMatch(dbMatch);
+  // confirmedMatches.forEach(apiMatch => {
+  //   const dbMatch = convertApiMatchToDbMatch(apiMatch);
+  //   insertMatch(dbMatch);
+  // });
+
+  const transaction = db.transaction(() => {
+    confirmedMatches.forEach(apiMatch => {
+      const dbMatch = convertApiMatchToDbMatch(apiMatch);
+      insertMatch(dbMatch);
+    });
   });
+  transaction();
 }
 
 // GETTERS

@@ -1,10 +1,31 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-// const db = new Database(path.join(__dirname, './bot-lol.db'));
+
+/* MaJ - RAM usage:
+
+SQLITE3: db { 
+memory: choose stockage,
+pragma { 
+  cache_size: cache limite,
+  temp_store: temporary table on file,
+  mmap_size: memory_mapping,
+  page_size: page size reduction },
+} */
+
 const dbName = process.env.ENVIRONMENT;
 const dbPath = process.env.DB_PATH || path.join(__dirname, `../../data/bot-lol-${dbName}.db`);
-const db = new Database(dbPath);
+
+const db = new Database(dbPath, {
+  memory: false,
+  fileMustExist: false,
+  timeout: 5000
+});
+
+db.pragma('cache_size = -2000');
+db.pragma('temp_store = FILE');
+db.pragma('mmap_size = 0');
+db.pragma('page_size = 1024'); 
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS matches (
