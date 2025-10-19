@@ -1,6 +1,13 @@
+// IMPORT
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
+// DB MANAGEMENT
+import { createTables } from './createTables';
+
+// CUSTOM
+import { Colors } from '../interface/color';
 
 /* MaJ - RAM usage:
 
@@ -15,55 +22,34 @@ pragma {
 const dbName = process.env.ENVIRONMENT;
 const dbPath = process.env.DB_PATH || path.join(__dirname, `../../data/bot-lol-${dbName}.db`);
 
+// CHECK EXISTING DB
+const dbExists = fs.existsSync(dbPath);
+
+// CONNECT DB
 const db = new Database(dbPath, {
   fileMustExist: false,
   timeout: 5000
 });
 
+// RAM USAGE 1
 db.pragma('cache_size = -2000');
 db.pragma('temp_store = FILE');
 db.pragma('mmap_size = 0');
-db.pragma('page_size = 1024'); 
+db.pragma('page_size = 1024');
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS matches (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  pandascore_id INTEGER UNIQUE,
-  name TEXT,
-  begin_at TEXT,
-  status TEXT,
-  tournament TEXT,
-  team1 TEXT,
-  team2 TEXT,
-  bo_count INTEGER,
-  score_team1 INTEGER DEFAULT 0,
-  score_team2 INTEGER DEFAULT 0,
-  announced INTEGER DEFAULT 0,
-  votes_closed INTEGER DEFAULT 0,
-  point_calculated INTEGER DEFAULT 0,
-  result_announced INTEGER DEFAULT 0
-);
+// INIT
+if (!dbExists) {
+  console.log(`${Colors.Blue}[DB]: Database does not exist, creating...`);
+  createTables(db);
+  console.log(`${Colors.Green}[DB]: Database created successfully!`);
+} else {
+  console.log(`${Colors.Blue}[DB]: Database exist, continuing...`);
+}
 
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    discord_id TEXT UNIQUE,
-    username TEXT,
-    points INTEGER DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS bets (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER,
-  match_id INTEGER,
-  predicted_winner TEXT,
-  predicted_score TEXT,
-  points INTEGER DEFAULT 0,
-  FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(match_id) REFERENCES matches(pandascore_id),
-  UNIQUE(user_id, match_id)
-);
-`);
-
-console.log("\x1b[32m%s\x1b[0m", '[SUCCESS]: Database created successfully');
+// DEBUG
+const matchCount = db.prepare('SELECT COUNT(*) as count FROM matches').get() as { count: number };
+const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+const betCount = db.prepare('SELECT COUNT(*) as count FROM bets').get() as { count: number };
+console.log(`${Colors.Blue}[DB]: ${matchCount.count} matches, ${userCount.count} users, ${betCount.count} bets`);
 
 export default db;

@@ -1,25 +1,16 @@
-// DEPENDANCES
-import { TextChannel } from 'discord.js';
-
-// CUSTOM 
 import { initEnv } from './config/env';
 import { MemoryManager } from './perf/memoryManager';
-
-// API
 import { fetchWorldsMatches } from './api/fetchApi';
-
-// BOT
-import { deployCommands } from './bot/deployCommands';
-import { processMatchResults } from './bot/utils/processMatchResults';
-import { startBot } from './bot/bot';
-import { announceResult } from './bot/utils/announceResult';
-
-// DB
-import { updateMatchResults, getFinishedMatches, markPointsCalculated, getFinishedMatchesNotAnnounced, markResultAnnounced } from './db/matchDb';
-
-// INTERFACES
 import { Colors } from './interface/color';
+import { FetchScheduler } from './service/fetchScheduler';
 
+// DISCORD
+import { deployCommands } from './bot/deployCommands';
+import { startBot } from './bot/bot';
+
+
+// FETCH SCHEDULER
+const fetchScheduler = new FetchScheduler();
 
 // ENV
 initEnv();
@@ -29,79 +20,104 @@ const memoryManager = MemoryManager.getInstance();
 memoryManager.startMemoryMonitoring();
 
 // TEST OR PROD
-console.log(`${Colors.Cyan}[DEBUG]: process.env.ENVIRONMENT = "${process.env.ENVIRONMENT}"${Colors.Reset}`);
+console.log(`${Colors.Yellow}[LOG]: process.env.ENVIRONMENT = "${process.env.ENVIRONMENT}"${Colors.Reset}`);
 const isProd = process.env.ENVIRONMENT === 'prod';
-console.log(`${Colors.Cyan}[INFO]: Running in ${isProd ? 'PRODUCTION' : 'TEST'} mode${Colors.Reset}`);
+console.log(`${Colors.Yellow}[LOG]: Running in ${isProd ? 'PRODUCTION' : 'TEST'} mode${Colors.Reset}`);
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = isProd ? process.env.CLIENT_ID : process.env.CLIENT_ID_TEST;
-const CHANNEL_ID = isProd ? process.env.CHANNEL_ID : process.env.CHANNEL_ID_TEST;
 const GUILD_ID = isProd ? process.env.GUILD_ID : process.env.GUILD_ID_TEST;
-
-if (!DISCORD_TOKEN || !CLIENT_ID || !CHANNEL_ID || !GUILD_ID) {
+const CHANNEL_ID = isProd ? process.env.CHANNEL_ID : process.env.GUILD_ID_TEST;
+if (!DISCORD_TOKEN || !CLIENT_ID || !GUILD_ID) {
   console.error(`${Colors.Red}[ERROR]: Missing required environment variables${Colors.Reset}`);
   process.exit(1);
 }
-console.log(`${Colors.Yellow}[LOG]: Bot started...${Colors.Reset}`);
+
+// BOT CLIENT
+let botClient: any = null;
 
 // MEMORY INITIAL CHECK
 const initialMemory = memoryManager.getMemoryUsage();
 console.log(`${Colors.Dim}[MEMORY]: Initial usage - Heap: ${initialMemory.heapUsed}MB, RSS: ${initialMemory.rss}MB${Colors.Reset}`);
 
-// DEBUG 
-// console.log(`${DISCORD_TOKEN}`);
-// console.log(`${CLIENT_ID}`);
-// console.log(`${CHANNEL_ID}`);
-// console.log(`${GUILD_ID}`);
-
-// COMMAND DEPLOYEMENT
-deployCommands(DISCORD_TOKEN, CLIENT_ID, GUILD_ID);
-
-// START FETCH AND BOT ROUTINE
-let botClient: any = null;
 (async () => {
-  botClient = await startBot(CHANNEL_ID, DISCORD_TOKEN);
-})()
+  try {
 
-setInterval(() => {
-  // MEMORY ANTE FETCH
-  const beforeMemory = memoryManager.getMemoryUsage();
-  console.log(`${Colors.Dim}[MEMORY]: Before fetch - Heap: ${beforeMemory.heapUsed}MB${Colors.Reset}`);
+    // INIT DB
+    await initializeDatabase();
+    
+    // DEPLOY COMMANDS
+    console.log(`${Colors.Purple}[BOT]: Deploying Discord commands...${Colors.Reset}`);
+    await deployCommands(DISCORD_TOKEN, CLIENT_ID, GUILD_ID, CHANNEL_ID);
+    console.log(`${Colors.Green}[BOT]: Commands deployed successfully!${Colors.Reset}`);
 
-	fetchWorldsMatches();
+    // BOT
+    console.log(`${Colors.Purple}[BOT]: Starting Discord bot...${Colors.Reset}`);
+    botClient = await startBot(CHANNEL_ID, DISCORD_TOKEN);
+    console.log(`${Colors.Green}[BOT]: Discord bot connected successfully!${Colors.Reset}`);
 
-  // MEMORY POST FETCH
-  const afterMemory = memoryManager.getMemoryUsage();
-  console.log(`${Colors.Dim}[MEMORY]: After fetch - Heap: ${afterMemory.heapUsed}MB${Colors.Reset}`);
-}, 10 * 1000)
-
-setInterval(async () => {
-	if (!botClient) return;
-
-  const finishedMatches = getFinishedMatches();
-  if (finishedMatches.length > 0){
-	finishedMatches.forEach((match: any) => {
-		processMatchResults(match.pandascore_id);
-		markPointsCalculated(match.pandascore_id);
- 	});
-  }
-
-  const matchesToAnnounce = getFinishedMatchesNotAnnounced();
-
-  	if (matchesToAnnounce.length > 0) {
-    const channelId = CHANNEL_ID;
-    if (channelId) {
+    // START SCHEDULER
+    console.log(`${Colors.Green}[INFO]: Starting adaptive fetch scheduler...${Colors.Reset}`);
+    fetchScheduler.start();
+    
+    // DB MONITORING AND SCHEDULER
+    setInterval(() => {
       try {
-        const channel = await botClient.channels.fetch(channelId);
-        if (channel && channel.isTextBased()) {
-          for (const match of matchesToAnnounce) {
-            await announceResult(channel as TextChannel, match);
-            markResultAnnounced(match.pandascore_id);
-          }
-        }
+        const db = require('./db/initDb').default;
+        const matchCount = db.prepare('SELECT COUNT(*) as count FROM matches').get() as { count: number };
+        const schedulerMode = fetchScheduler.getCurrentMode();
+        const nextFetchIn = Math.round(fetchScheduler.getNextFetchIn() / 1000 / 60); // en minutes
+        
+        console.log(`${Colors.Blue}[STATUS]: ${matchCount.count} matches | Scheduler: ${schedulerMode} mode | Next fetch in: ${nextFetchIn}min${Colors.Reset}`);
       } catch (error) {
-        console.error(`${Colors.Red}[ERROR]: Could not announce results: ${error}${Colors.Reset}`);
+        console.error(`${Colors.Red}[ERROR]: Failed to get status: ${error}${Colors.Reset}`);
       }
-    }
+    }, 5 * 60 * 1000);
+    
+    console.log(`${Colors.Green}[SUCCESS]: Bot is now running with adaptive fetching!${Colors.Reset}`);
+    
+  } catch (error) {
+    console.error(`${Colors.Red}[FATAL]: Failed to start bot: ${error}${Colors.Reset}`);
+    process.exit(1);
   }
-},10 * 1000);
+})();
 
+// INIT DATABASE
+async function initializeDatabase() {
+  console.log(`${Colors.Yellow}[LOG]: Starting initial database population...${Colors.Reset}`);
+  
+  try {
+
+    // Get initial match count
+    const db = require('./db/initDb').default;
+    const initialCount = db.prepare('SELECT COUNT(*) as count FROM matches').get() as { count: number };
+    console.log(`${Colors.Yellow}[LOG]: Current matches in DB: ${initialCount.count}${Colors.Reset}`);
+    
+    await fetchWorldsMatches();
+    
+    // Get updated match count
+    const finalCount = db.prepare('SELECT COUNT(*) as count FROM matches').get() as { count: number };
+    const addedMatches = finalCount.count - initialCount.count;
+    
+    console.log(`${Colors.Green}[LOG]: Database initialization completed!${Colors.Reset}`);
+    console.log(`${Colors.Yellow}[LOG]: Added ${addedMatches} new matches (Total: ${finalCount.count})${Colors.Reset}`);
+    
+    return finalCount.count;
+    
+  } catch (error) {
+    console.error(`${Colors.Red}[ERROR]: Initial database population failed: ${error}${Colors.Reset}`);
+    throw error;
+  }
+}
+
+// EXIT
+process.on('SIGINT', () => {
+  console.log(`${Colors.Red}[LOG]: Shutting down gracefully...${Colors.Reset}`);
+  
+  if (botClient) {
+    console.log(`${Colors.Red}[BOT]: Disconnecting bot...${Colors.Reset}`);
+    botClient.destroy();
+  }
+  
+  fetchScheduler.stop();
+  process.exit(0);
+});

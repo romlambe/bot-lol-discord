@@ -6,7 +6,7 @@ import { Colors } from '../interface/color';
 
 dotenv.config();
 
-export async function deployCommands(discordToken: string, clientId: string, guildId: string) {
+export async function deployCommands(discordToken: string, clientId: string, guildId: string, channelId: string) {
   try {
     if (!clientId || !guildId || !discordToken) {
       console.log(`${Colors.Red}[ERROR]: Missing clientId, guildId, or discordToken${Colors.Reset}`);

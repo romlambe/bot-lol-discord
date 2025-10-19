@@ -27,7 +27,7 @@ else
 fi
 
 if [ "$ENV" = "prod" ]; then
-  ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up -d --build
+  ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up --build
 else
   ENVIRONMENT=$ENV DISCORD_TOKEN=$DISCORD_TOKEN docker-compose up --build
 fi

@@ -3,3 +3,6 @@
 .env
 node_modules
 package.json
+
+data/bot-lol-prod.db
+data/bot-lol-test.db

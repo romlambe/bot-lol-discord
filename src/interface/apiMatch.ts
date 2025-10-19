@@ -4,7 +4,7 @@ export interface ApiMatch {
   begin_at: string;
   status: string;
   league?: { name: string };
-  serie?: { slug: string };
+  serie?: { slug: string, name?: string};
   tournament?: { name: string };
   opponents: { opponent: { id: number; acronym: string; name: string } }[];
   results: { team_id: number; score: number }[];

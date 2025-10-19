@@ -7,8 +7,7 @@ npm-debug.log
 .DS_Store
 dist
 data/
-src/db/bot-lol.db
-src/db/bot-lol-prod.db
-src/db/bot-lol-test.db
+data/bot-lol-prod.db
+data/bot-lol-test.db
 src/test/
 src/api/testApi.ts
